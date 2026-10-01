@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>web2 echo</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; font-family: Arial, sans-serif; background: #fff; color: #111; }
+
+    .page {
+      width: min(960px, calc(100% - 32px));
+      margin: 72px auto;
+    }
+
+    .output {
+      height: 420px;
+      background: #ddd;
+      padding: 24px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .input-row {
+      margin-top: 48px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .input-row input {
+      flex: 1;
+      height: 52px;
+      border: 0;
+      background: #ddd;
+      padding: 0 16px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .input-row button {
+      width: 100px;
+      border: 0;
+      background: #222;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .input-row button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .line {
+      margin-bottom: 12px;
+    }
+
+    .time {
+      opacity: 0.55;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section id="output" class="output"></section>
+
+    <form id="form" class="input-row">
+      <input id="input" autocomplete="off" placeholder="텍스트 입력" />
+      <button id="send" type="submit">보내기</button>
+    </form>
+  </main>
+
+  <script>
+    const SERVER_URL = "http://3.107.230.124:8000";
+
+    const output = document.getElementById("output");
+    const input = document.getElementById("input");
+    const send = document.getElementById("send");
+    const form = document.getElementById("form");
+
+    function now() {
+      return new Intl.DateTimeFormat("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      }).format(new Date());
+    }
+
+    function print(text) {
+      const line = document.createElement("div");
+      line.className = "line";
+
+      const time = document.createElement("span");
+      time.className = "time";
+      time.textContent = "[" + now() + "]";
+
+      const body = document.createElement("span");
+      body.textContent = text;
+
+      line.append(time, body);
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const text = input.value.trim();
+      if (!text) return;
+
+      send.disabled = true;
+
+      try {
+        const response = await fetch(SERVER_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8"
+          },
+          body: text
+        });
+
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+
+        const echoed = await response.text();
+        print(echoed);
+        input.value = "";
+        input.focus();
+      } catch (error) {
+        print("ERROR: " + error.message);
+      } finally {
+        send.disabled = false;
+      }
+    });
+
+    input.focus();
+  </script>
+</body>
+</html>
