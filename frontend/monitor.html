@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>web2 monitor</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #111;
+      color: #eee;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 32px auto;
+    }
+    h1 { font-size: 22px; margin: 0 0 24px; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: #1d1d1d;
+      border: 1px solid #333;
+      padding: 18px;
+    }
+    .label { color: #888; font-size: 12px; }
+    .value { font-size: 28px; margin-top: 8px; }
+    .events {
+      background: #181818;
+      border: 1px solid #333;
+      min-height: 560px;
+      padding: 16px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 170px 48px 125px 70px 70px 1fr;
+      gap: 10px;
+      padding: 8px 4px;
+      border-bottom: 1px solid #252525;
+      font-size: 14px;
+    }
+    .head { color: #777; }
+    .in { color: #8fd3ff; }
+    .out { color: #9ce6a8; }
+    .text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @media (max-width: 800px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .row { grid-template-columns: 140px 42px 90px 60px 1fr; }
+      .method { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>SERVER MONITOR</h1>
+
+    <section class="stats">
+      <div class="card"><div class="label">REQUESTS</div><div id="requests" class="value">0</div></div>
+      <div class="card"><div class="label">RECEIVED</div><div id="received" class="value">0 B</div></div>
+      <div class="card"><div class="label">SENT</div><div id="sent" class="value">0 B</div></div>
+      <div class="card"><div class="label">CLIENTS</div><div id="clients" class="value">0</div></div>
+    </section>
+
+    <section class="events">
+      <div class="row head">
+        <span>TIME</span><span>DIR</span><span>CLIENT</span><span class="method">METHOD</span><span>BYTES</span><span>DATA</span>
+      </div>
+      <div id="rows"></div>
+    </section>
+  </main>
+
+  <script>
+    const requests = document.getElementById("requests");
+    const received = document.getElementById("received");
+    const sent = document.getElementById("sent");
+    const clients = document.getElementById("clients");
+    const rows = document.getElementById("rows");
+
+    function bytes(n) {
+      if (n < 1024) return n + " B";
+      if (n < 1024 * 1024) return (n / 1024).toFixed(2) + " KiB";
+      return (n / (1024 * 1024)).toFixed(2) + " MiB";
+    }
+
+    function localTime(iso) {
+      return new Date(iso).toLocaleTimeString("ko-KR", { hour12: false });
+    }
+
+    async function refresh() {
+      const response = await fetch("/monitor-data", { cache: "no-store" });
+      const data = await response.json();
+
+      requests.textContent = data.requests;
+      received.textContent = bytes(data.received_bytes);
+      sent.textContent = bytes(data.sent_bytes);
+      clients.textContent = data.clients;
+
+      rows.replaceChildren();
+
+      for (const item of data.events) {
+        const row = document.createElement("div");
+        row.className = "row";
+
+        const time = document.createElement("span");
+        time.textContent = localTime(item.time);
+
+        const direction = document.createElement("span");
+        direction.textContent = item.direction;
+        direction.className = item.direction === "IN" ? "in" : "out";
+
+        const client = document.createElement("span");
+        client.textContent = item.client;
+
+        const method = document.createElement("span");
+        method.textContent = item.method;
+        method.className = "method";
+
+        const size = document.createElement("span");
+        size.textContent = item.bytes;
+
+        const text = document.createElement("span");
+        text.className = "text";
+        text.textContent = item.text;
+
+        row.append(time, direction, client, method, size, text);
+        rows.appendChild(row);
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 500);
+  </script>
+</body>
+</html>
