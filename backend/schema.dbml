@@ -1,0 +1,31 @@
+Table users {
+  user_id bigint [pk, increment]
+  login_id varchar(50) [unique, not null]
+  pw_hash varchar(255) [not null]
+  created_at datetime [not null]
+}
+
+Table sessions {
+  ip varchar(45) [pk]
+  user_id bigint [not null]
+  server_piece bigint [not null]
+  created_at datetime [not null]
+}
+
+Table rooms {
+  room_id bigint [pk, increment]
+  name varchar(100) [unique, not null]
+  created_at datetime [not null]
+}
+
+Table messages {
+  message_id bigint [pk, increment]
+  room_id bigint [not null]
+  user_id bigint [not null]
+  text text [not null]
+  sent_at datetime [not null]
+}
+
+Ref: sessions.user_id > users.user_id
+Ref: messages.user_id > users.user_id
+Ref: messages.room_id > rooms.room_id
