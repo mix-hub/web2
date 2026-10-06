@@ -51,6 +51,14 @@ def db_connect():
     )
 
 
+def validate_login_id(login_id):
+    return isinstance(login_id, str) and bool(login_id.strip())
+
+
+def validate_password(password):
+    return isinstance(password, str) and bool(password)
+
+
 class Handler(BaseHTTPRequestHandler):
     def send_body(self, status, body, content_type):
         self.send_response(status)
@@ -145,11 +153,11 @@ class Handler(BaseHTTPRequestHandler):
         login_id = data.get("login_id")
         password = data.get("password")
 
-        if not isinstance(login_id, str) or not login_id.strip():
+        if not validate_login_id(login_id):
             self.send_json(400, {"error": "login_id is required"})
             return
 
-        if not isinstance(password, str) or not password:
+        if not validate_password(password):
             self.send_json(400, {"error": "password is required"})
             return
 
